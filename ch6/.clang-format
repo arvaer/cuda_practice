@@ -1,0 +1,67 @@
+---
+# .clang-format configuration based on provided coding standards
+Language: Cpp
+Standard: c++17
+# Use tabs that equal 4 spaces
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+
+# Brace placement - keep braces on same line (trailing braces)
+BreakBeforeBraces: Attach
+
+# Padding inside parentheses
+SpacesInParentheses: true
+SpacesInSquareBrackets: false
+SpacesInAngles: false
+SpaceInEmptyParentheses: false
+SpaceBeforeParens: Always
+
+# Function declarations/definitions
+AllowShortFunctionsOnASingleLine: None
+AlwaysBreakAfterReturnType: None
+BinPackParameters: false
+BinPackArguments: false
+
+# Pointer/reference alignment
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Indentation
+IndentCaseLabels: true
+IndentGotoLabels: true
+IndentPPDirectives: BeforeHash
+
+# Column alignments (for class variables, etc.)
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+
+# Spacing
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceAfterTemplateKeyword: true
+
+# Line breaks
+ColumnLimit: 100
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Comments
+ReflowComments: true
+SpacesBeforeTrailingComments: 1
+
+
+# Keep empty lines for readability
+MaxEmptyLinesToKeep: 1
+
+# Ensure proper enum indentation
+IndentWrappedFunctionNames: false
+
+# Naming conventions are not part of clang-format, but the other style rules are captured
+---

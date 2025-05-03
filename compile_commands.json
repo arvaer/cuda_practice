@@ -1,0 +1,12 @@
+[
+  {
+    "arguments": [
+      "/opt/cuda/bin/nvcc",
+      "-c",
+      "-g",
+      "ch2.cu"
+    ],
+    "directory": "/home/galois/Documents/cuda",
+    "file": "/home/galois/Documents/cuda/ch2.cu"
+  }
+]
