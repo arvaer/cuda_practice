@@ -122,7 +122,6 @@ int main () {
 	base_result = calculate_result ( h_S, M_rows * N_cols );
 	printf ( "Base Result: %f \n", base_result );
 
-	// print result
 
 	return 0;
 }

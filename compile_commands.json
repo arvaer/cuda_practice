@@ -7,7 +7,7 @@
       "/usr/bin/gcc-12",
       "matmul.cu"
     ],
-    "directory": "/home/galois/Documents/cuda/ch6",
-    "file": "/home/galois/Documents/cuda/ch6/matmul.cu"
+    "directory": "/home/galois/Documents/cuda",
+    "file": "/home/galois/Documents/cuda/matmul.cu"
   }
 ]
