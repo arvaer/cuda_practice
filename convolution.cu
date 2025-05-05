@@ -6,7 +6,12 @@
 #define FILT_RADIUS 3
 __constant__ float Filter[2 * FILT_RADIUS + 1][2 * FILT_RADIUS + 1];
 
-__global__ void convolve ( size_t m, size_t n, size_t f, float* __restrict__ X, float* __restrict__ F, float* __restrict__ A ) {
+__global__ void convolve ( size_t m,
+                           size_t n,
+                           size_t f,
+                           float* __restrict__ X,
+                           float* __restrict__ F,
+                           float* __restrict__ A ) {
 	int row = blockDim.y * blockIdx.y + threadIdx.y;
 	int col = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -35,7 +40,8 @@ __global__ void convolve ( size_t m, size_t n, size_t f, float* __restrict__ X, 
 	A[row * n + col] = sum;
 }
 
-__global__ void convolve_constant_mem ( size_t m, size_t n, float* __restrict__ X, float* __restrict__ A ) {
+__global__ void
+convolve_constant_mem ( size_t m, size_t n, float* __restrict__ X, float* __restrict__ A ) {
 	int row = blockDim.y * blockIdx.y + threadIdx.y;
 	int col = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -51,6 +57,66 @@ __global__ void convolve_constant_mem ( size_t m, size_t n, float* __restrict__ 
 
 			if ( y >= 0 && y < m && x >= 0 && x < n ) {
 				float X_val = X[y * n + x];
+				float F_val = Filter[FILT_RADIUS + dy][FILT_RADIUS + dx];
+				sum += X_val * F_val;
+			}
+		}
+	}
+
+	A[row * n + col] = sum;
+}
+
+__global__ void suki ( size_t m, size_t n, float* __restrict__ X, float* __restrict__ A ) {
+	__shared__ float halo[TILE_WIDTH + 2*FILT_RADIUS][TILE_WIDTH + 2*FILT_RADIUS];
+
+	int row = TILE_WIDTH * blockIdx.y + threadIdx.y;
+	int col = TILE_WIDTH * blockIdx.x + threadIdx.x;
+
+    /*
+     *
+
+    X:                            halo :
+    +---+---+---+---+---+         +---+---+---+---+---+---+
+    | . | . | . | . | . |         | 0 | 1 | 2 | 3 | 4 | 5 |
+    +---+---+---+---+---+         +---+---+---+---+---+---+
+    | . | . | . | . | . |         | 6 | 7 | 8 | 9 |10 |11 |
+    +---+---+---+---+---+         +---+---+---+---+---+---+
+    | . | . | . | . | . |   →     |12 |13 |14 |15 |16 |17 |
+    +---+---+---+---+---+         +---+---+---+---+---+---+
+    | . | . | . | . | . |         |18 |19 |20 |21 |22 |23 |
+    +---+---+---+---+---+         +---+---+---+---+---+---+
+    | . | . | . | . | . |         |24 |25 |26 |27 |28 |29 |
+    +---+---+---+---+---+         +---+---+---+---+---+---+
+                                  |30 |31 |32 |33 |34 |35 |
+                                  +---+---+---+---+---+---+
+     */
+
+    for(int dy = threadIdx.y; dy < TILE_WIDTH + FILT_RADIUS * 2; dy+=blockDim.y){
+        for(int dx = threadIdx.x; dx < TILE_WIDTH + FILT_RADIUS * 2; dx+=blockDim.x) {
+            int y = TILE_WIDTH * blockIdx.y + dy - FILT_RADIUS;
+            int x = TILE_WIDTH * blockIdx.x + dx - FILT_RADIUS;
+
+            if (y >= 0 && y < m && x>=0 && x < n) {
+                halo[dy][dx] = X[y * n + x];
+            } else {
+                halo[dy][dx] = 0.0f;
+            }
+        }
+    }
+
+    __syncthreads();
+
+	float sum = 0.0f;
+	if ( row >= m || col >= n )
+		return;
+
+	for ( int dy = -FILT_RADIUS; dy <= FILT_RADIUS; ++dy ) {
+		for ( int dx = -FILT_RADIUS; dx <= FILT_RADIUS; ++dx ) {
+			int y = threadIdx.y + dy + FILT_RADIUS;
+			int x = threadIdx.x + dx + FILT_RADIUS;
+
+			if ( y >= 0 && y < m && x >= 0 && x < n ) {
+				float X_val = halo[y][x];
 				float F_val = Filter[FILT_RADIUS + dy][FILT_RADIUS + dx];
 				sum += X_val * F_val;
 			}
@@ -106,7 +172,6 @@ int main () {
 	cudaMemcpy( d_F, h_F, filter_size * filter_size * sizeof( float ), cudaMemcpyHostToDevice );
 
 	cudaMemcpyToSymbol( Filter, h_F, filter_size * filter_size * sizeof( float ) );
-	cudaMemset( d_A, 0, X_rows * X_cols * sizeof( float ) );
 
 	cudaEvent_t start, stop;
 	float       elapsed = 0.0f;
@@ -114,7 +179,9 @@ int main () {
 	cudaEventCreate( &start );
 	cudaEventCreate( &stop );
 
+    // -------
 	cudaEventRecord( start );
+	cudaMemset( d_A, 0, X_rows * X_cols * sizeof( float ) );
 	convolve<<<gridDim, blockDim>>>( X_rows, X_cols, filter_size, d_X, d_F, d_A );
 	cudaError_t err = cudaGetLastError();
 	if ( err != cudaSuccess ) {
@@ -122,10 +189,8 @@ int main () {
 	}
 
 	cudaEventRecord( stop );
-
 	cudaEventSynchronize( stop );
 	cudaEventElapsedTime( &elapsed, start, stop );
-
 	cudaMemcpy( h_A, d_A, X_cols * X_rows * sizeof( float ), cudaMemcpyDeviceToHost );
 
 	float base_result = calculate_result( h_A, X_rows * X_cols );
@@ -133,6 +198,7 @@ int main () {
 	printf( "Kernel Time (regular): %.3f ms\n", elapsed );
 
 
+    // -------
 	cudaMemset( d_A, 0, X_rows * X_cols * sizeof( float ) );
 
 	cudaEventRecord( start );
@@ -152,6 +218,26 @@ int main () {
 	base_result = calculate_result( h_A, X_rows * X_cols );
 	printf( "Base Result (const mem): %f\n", base_result );
 	printf( "Kernel Time (const mem): %.3f ms\n", elapsed );
+    // -------
+	cudaMemset( d_A, 0, X_rows * X_cols * sizeof( float ) );
+
+	cudaEventRecord( start );
+	suki<<<gridDim, blockDim>>>( X_rows, X_cols, d_X, d_A );
+	err = cudaGetLastError();
+	if ( err != cudaSuccess ) {
+		printf( "CUDA Error: %s\n", cudaGetErrorString( err ) );
+	}
+
+	cudaEventRecord( stop );
+
+	cudaEventSynchronize( stop );
+	cudaEventElapsedTime( &elapsed, start, stop );
+
+	cudaMemcpy( h_A, d_A, X_cols * X_rows * sizeof( float ), cudaMemcpyDeviceToHost );
+
+	base_result = calculate_result( h_A, X_rows * X_cols );
+	printf( "Base Result (suki mem): %f\n", base_result );
+	printf( "Kernel Time (suki mem): %.3f ms\n", elapsed );
 
 	cudaEventDestroy( start );
 	cudaEventDestroy( stop );
