@@ -1,67 +1,66 @@
----
-# .clang-format configuration based on provided coding standards
-Language: Cpp
-Standard: c++17
-# Use tabs that equal 4 spaces
-UseTab: Always
-TabWidth: 4
+BasedOnStyle: LLVM  # start from a base style (LLVM is fairly close to K&R brace style)
 IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation
 
-# Brace placement - keep braces on same line (trailing braces)
+# Braces and control statements
 BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Never      # never merge even empty or single-statement blocks into one line
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None    # None = do not allow even empty functions on one line
+AllowShortEnumsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortCaseExpressionOnASingleLine: false
 
-# Padding inside parentheses
-SpacesInParentheses: true
-SpacesInSquareBrackets: false
-SpacesInAngles: false
-SpaceInEmptyParentheses: false
-SpaceBeforeParens: Always
+# Spacing around parentheses and brackets
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true            # space after if/for/while/etc.:contentReference[oaicite:16]{index=16}
+  AfterFunctionDeclarationName: true      # space after function names in declarations:contentReference[oaicite:17]{index=17}
+  AfterFunctionDefinitionName: true       # space after function names in definitions:contentReference[oaicite:18]{index=18}
+SpacesInParentheses: true                 # pad inside parentheses:contentReference[oaicite:19]{index=19}
+SpacesInSquareBrackets: false             # no padding inside []
+SpacesInAngles: false                     # no padding inside <> (templates)
+SpaceAfterCStyleCast: false               # e.g. (int)x, not (int) x
+SpaceBeforeAssignmentOperators: true      # space before and after '='
+SpaceBeforeRangeBasedForLoopColon: true   # space around ':' in range-for
 
-# Function declarations/definitions
-AllowShortFunctionsOnASingleLine: None
-AlwaysBreakAfterReturnType: None
-BinPackParameters: false
-BinPackArguments: false
+# Indentation rules
+IndentCaseLabels: true                    # indent case labels inside switch
+AccessModifierOffset: -4                  # outdent class access specifiers (public/private) by one level
+NamespaceIndentation: None                # do not indent inside namespace
 
 # Pointer/reference alignment
-PointerAlignment: Left
-ReferenceAlignment: Left
+DerivePointerAlignment: false
+PointerAlignment: Left                    # align '*' with type (e.g., int* ptr):contentReference[oaicite:20]{index=20}
+ReferenceAlignment: Left                  # align '&' with type as well
 
-# Indentation
-IndentCaseLabels: true
-IndentGotoLabels: true
-IndentPPDirectives: BeforeHash
+# Function declaration parameters/arguments formatting
+AllowAllParametersOfDeclarationOnNextLine: false  # if function decl doesn't fit on one line, break each param to its own line:contentReference[oaicite:21]{index=21}
+BinPackParameters: false                 # do not pack multiple params on one line
+BinPackArguments: false                  # do not pack multiple args on one line
 
-# Column alignments (for class variables, etc.)
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
-AlignConsecutiveMacros: true
+# Alignment of code and comments
+AlignConsecutiveDeclarations: true       # align names in consecutive declarations into columns:contentReference[oaicite:22]{index=22}
+AlignConsecutiveAssignments: true        # align '=' in consecutive assignments into columns
+AlignTrailingComments: true              # align trailing comments in a column
 
-# Spacing
-SpaceAfterCStyleCast: true
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: true
-SpaceBeforeRangeBasedForLoopColon: true
-SpaceBeforeSquareBrackets: false
-SpaceAfterTemplateKeyword: true
+# Format include directives
+SortIncludes: true
+IncludeCategories:
+  - Regex: '".*"'        # project header includes (quotes)
+    Priority: 1
+  - Regex: '^<.*\.h>'    # system includes with .h
+    Priority: 2
+  - Regex: '^<.*'        # other system includes
+    Priority: 3
 
-# Line breaks
-ColumnLimit: 100
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
+# Empty lines and formatting
+KeepEmptyLinesAtTheStartOfBlocks: true   # preserve blank line after '{' if present
+MaxEmptyLinesToKeep: 2                   # allow up to 2 consecutive empty lines
+ColumnLimit: 100                         # max line width of 100 characters
+ReflowComments: true                     # wrap/reflow comments to fit ColumnLimit
+FixNamespaceComments: true              # add // namespace comments at closing brace
+InsertNewlineAtEOF: true                # ensure file ends with a newline
 
-# Comments
-ReflowComments: true
-SpacesBeforeTrailingComments: 1
-
-
-# Keep empty lines for readability
-MaxEmptyLinesToKeep: 1
-
-# Ensure proper enum indentation
-IndentWrappedFunctionNames: false
-
-# Naming conventions are not part of clang-format, but the other style rules are captured
----
