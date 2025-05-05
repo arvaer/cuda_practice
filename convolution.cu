@@ -4,13 +4,34 @@
 
 #define TILE_WIDTH 16
 
+__global__ void convolve ( size_t m, size_t n, size_t f, float* X, float* F, float* A ) {
+	int row = blockDim.y * blockIdx.y + threadIdx.y;
+	int col = blockDim.x * blockIdx.x + threadIdx.x;
 
+	// we know that f is square. so basically we need to calclulate the midpoint to be able to scale
+	float sum = 0.0f;
+	if ( row >= m || col >= n )
+		return;
+	if ( f % 2 == 0 ) {
+		// how do I raise an error here?
+		return;
+	}
+	int f_mid = f / 2;
+	for ( int dy = -f_mid; dy <= f_mid; ++dy ) {
+		for ( int dx = -f_mid; dx <= f_mid; ++dx ) {
+			int y = row + dy;
+			int x = col + dx;
 
-__global__ void convolve(size_t m, size_t n, size_t f, float* X, float* F, float* A) {
+			if ( y >= 0 && y < m && x >= 0 && x < n ) {
+				float X_val = X[y * n + x];
+				float F_val = F[( f_mid + dy ) * f + ( f_mid + dx )];
+				sum += X_val * F_val;
+			}
+		}
+	}
 
+	A[row * n + col] = sum;
 }
-
-
 
 void init_matrix ( size_t n, size_t m, float* A, float max ) {
 	for ( size_t i = 0; i < n; ++i ) {
@@ -31,11 +52,11 @@ float calculate_result ( float* array, size_t size ) {
 
 int main () {
 	// initialize three matricies
-	size_t X_rows  = 150;
-	size_t X_cols  = 150;
+	size_t X_rows = 150;
+	size_t X_cols = 150;
 
-    size_t F_rows = 5;
-    size_t F_cols = 5;
+	size_t F_rows = 5;
+	size_t F_cols = 5;
 
 	float* h_X = (float*) malloc ( X_rows * X_cols * sizeof ( float ) );
 	float* h_F = (float*) malloc ( F_rows * F_cols * sizeof ( float ) );
@@ -53,20 +74,18 @@ int main () {
 	cudaMemcpy ( d_F, h_F, F_rows * F_cols * sizeof ( float ), cudaMemcpyHostToDevice );
 	cudaMemset ( d_A, 0, X_rows * X_cols * sizeof ( float ) );
 
-	int gx = ( X_rows + TILE_WIDTH - 1 ) / TILE_WIDTH;
-	int gy = ( X_cols + TILE_WIDTH - 1 ) / TILE_WIDTH;
+	int	 gx = ( X_rows + TILE_WIDTH - 1 ) / TILE_WIDTH;
+	int	 gy = ( X_cols + TILE_WIDTH - 1 ) / TILE_WIDTH;
 	dim3 blockDim ( TILE_WIDTH, TILE_WIDTH );
 	dim3 gridDim ( gx, gy );
 
 	convolve<<<gridDim, blockDim>>> ( X_rows, X_cols, F_rows, d_X, d_F, d_A );
 
-    cudaDeviceSynchronize();
+	cudaDeviceSynchronize ();
 	cudaMemcpy ( h_A, d_A, X_cols * X_rows * sizeof ( float ), cudaMemcpyDeviceToHost );
 
 	float base_result = calculate_result ( h_A, X_rows * X_cols );
 	printf ( "Base Result: %f \n", base_result );
-
-
 
 	return 0;
 }
