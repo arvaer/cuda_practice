@@ -5,9 +5,9 @@
       "-c",
       "--compiler-bindir",
       "/usr/bin/gcc-12",
-      "matmul.cu"
+      "convolution.cu"
     ],
     "directory": "/home/galois/Documents/cuda",
-    "file": "/home/galois/Documents/cuda/matmul.cu"
+    "file": "/home/galois/Documents/cuda/convolution.cu"
   }
 ]
